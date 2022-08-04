@@ -7,7 +7,7 @@ nltk.download('wordnet')
 from nltk.stem import PorterStemmer
 
 # create an instance of class PorterStemmer
-
+stemmer = PorterStemmer()
 
 # importing json lib
 import json
@@ -30,7 +30,6 @@ train_data_file.close()
 def get_stem_words(words, ignore_words):
     stem_words = []
     for word in words:
-
         # write stemming algorithm:
         '''
         Check if word is not a part of stop word:
@@ -39,7 +38,10 @@ def get_stem_words(words, ignore_words):
         3) append it to stem_words list
         4) return the list
         ''' 
-        # Add code here #        
+        # Add code here # 
+        if word not in ignore_words:
+            w = stemmer.stem(word.lower())
+            stem_words.append(w)  
 
     return stem_words
 
@@ -67,10 +69,11 @@ def create_bot_corpus(words, classes, pattern_word_tags_list, ignore_words):
             # tokenize the pattern          
             pattern_words = nltk.word_tokenize(pattern)
 
-            # add the tokenized words to the words list        
+            # add the tokenized words to the words list   
+            words.extend(pattern_word)     
                           
             # add the 'tokenized word list' along with the 'tag' to pattern_word_tags_list
-            
+            word_tags_list.append((pattern_word, intent['tag']))
             
         # Add all tags to the classes list
         if intent['tag'] not in classes:
@@ -113,8 +116,21 @@ def bag_of_words_encoding(stem_words, pattern_word_tags_list):
         2) check if that word is in stemmed_pattern_word
         3) append 1 in BOW, otherwise append 0
         '''
-        
-        bag.append(bag_of_words)
+
+        for word in stem_words:
+            if word in pattern_words:
+                bag_of_words.append(1)
+            else:
+                bag_of_words.append(0)
+        print(bag_of_words)
+
+        labels_encoding = list(labels) #labels all zeroes initially
+        tag = word_tags[1] #save tag
+        tag_index = classes.index(tag)  #go to index of tag
+        labels_encoding[tag_index] = 1  #append 1 at that index
+       
+        training_data.append([bag_of_words, labels_encoding])
+
     
     return np.array(bag)
 
@@ -145,7 +161,8 @@ def preprocess_train_data():
     stem_words, tag_classes, word_tags_list = create_bot_corpus(words, classes, pattern_word_tags_list, ignore_words)
     
     # Convert Stem words and Classes to Python pickel file format
-    
+    rain_x = list(training_data[:,0])
+    train_y = list(training_data[:,1])
 
     train_x = bag_of_words_encoding(stem_words, word_tags_list)
     train_y = class_label_encoding(tag_classes, word_tags_list)
